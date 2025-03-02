@@ -1,0 +1,4 @@
+A;B;S
+a;b;c
+S->ab;S->AB;B->aac
+S
