@@ -5,6 +5,40 @@
     public Dictionary<string, List<string>> Rules { get; set; } = new();
     public string StartSymbol { get; set; } = "";
 
+    public Grammar(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException("Soubor s gramatikou neexistuje.");
+        }
+
+        string[] lines = File.ReadAllLines(filePath);
+        if (lines.Length < 4)
+        {
+            throw new Exception("Neplatný formát souboru.");
+        }
+
+        NonTerminals = new HashSet<string>(lines[0].Split(';'));
+        Terminals = new HashSet<string>(lines[1].Split(';'));
+        StartSymbol = lines[3].Trim();
+
+        foreach (string rule in lines[2].Split(';'))
+        {
+            string[] parts = rule.Split("->");
+            if (parts.Length == 2)
+            {
+                string left = parts[0].Trim();
+                string right = parts[1].Trim();
+
+                if (!Rules.ContainsKey(left))
+                {
+                    Rules[left] = new List<string>();
+                }
+                Rules[left].Add(right);
+            }
+        }
+    }
+
     public void PrintGrammar()
     {
         Console.WriteLine("Neterminály: " + string.Join(", ", NonTerminals));
@@ -30,40 +64,7 @@ class Program
             return;
         }
 
-        Grammar grammar = ParseGrammar(filePath);
+        Grammar grammar = new Grammar(filePath);
         grammar.PrintGrammar();
-    }
-
-    static Grammar ParseGrammar(string filePath)
-    {
-        string[] lines = File.ReadAllLines(filePath);
-        if (lines.Length < 4)
-        {
-            throw new Exception("Neplatný formát souboru.");
-        }
-
-        Grammar grammar = new Grammar
-        {
-            NonTerminals = new HashSet<string>(lines[0].Split(';')),
-            Terminals = new HashSet<string>(lines[1].Split(';')),
-            StartSymbol = lines[3].Trim()
-        };
-
-        foreach (string rule in lines[2].Split(';'))
-        {
-            string[] parts = rule.Split("->");
-            if (parts.Length == 2)
-            {
-                string left = parts[0].Trim();
-                string right = parts[1].Trim();
-
-                if (!grammar.Rules.ContainsKey(left)) { 
-                    grammar.Rules[left] = new List<string>();
-                }
-                grammar.Rules[left].Add(right);
-            }
-        }
-
-        return grammar;
     }
 }
