@@ -55,6 +55,11 @@ class ContextFreeGrammar : Grammar
         }
     }
 
+    public string GenerateRandomString()
+    {
+        //TODO: Implementace generování náhodného řetězce
+        return "";
+    }
     public override void PrintGrammar()
     {
         Console.WriteLine("Bezkontextová gramatika:");
@@ -66,6 +71,7 @@ class ContextFreeGrammar : Grammar
             Console.WriteLine($"  {rule.Key} -> {string.Join(" | ", rule.Value)}");
         }
         Console.WriteLine("Startovací symbol: " + StartSymbol);
+        Console.WriteLine("Vygenerovaný řetězec: "+ GenerateRandomString());
     }
 }
 
@@ -104,6 +110,11 @@ class MatrixGrammar : Grammar
 
         Matrices = matrices;
     }
+    public string GenerateRandomString()
+    {
+        //TODO: Implementace generování náhodného řetězce
+        return "";
+    }
 
     public override void PrintGrammar()
     {
@@ -123,6 +134,7 @@ class MatrixGrammar : Grammar
             }
             index++;
         }
+        Console.WriteLine("Vygenerovaný řetězec: " + GenerateRandomString());
     }
 }
 
