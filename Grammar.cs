@@ -1,12 +1,8 @@
-﻿using System;
-
-abstract class Grammar
+﻿abstract class Grammar
 {
     public HashSet<string> NonTerminals { get; set; } = [];
     public HashSet<string> Terminals { get; set; } = [];
     public string StartSymbol { get; set; } = "";
-    public string Word { get; set; } = "";
-    public HashSet<string> Words { get; set; } = [];
 
     public static readonly Random random = new Random();
 
@@ -26,7 +22,6 @@ abstract class Grammar
         NonTerminals = new HashSet<string>(lines[1].Split(';', StringSplitOptions.RemoveEmptyEntries));
         Terminals = new HashSet<string>(lines[2].Split(';', StringSplitOptions.RemoveEmptyEntries));
         StartSymbol = lines[4].Trim();
-        Word = StartSymbol;
 
         ParseRules(lines[3]);
     }
@@ -57,11 +52,29 @@ class ContextFreeGrammar : Grammar
                 string left = parts[0].Trim();
                 string right = parts[1].Trim();
 
+                ValidateRule(left, right);
+
                 if (!Rules.ContainsKey(left))
                 {
                     Rules[left] = new List<string>();
                 }
                 Rules[left].Add(right);
+            }
+        }
+    }
+
+    private void ValidateRule(string left, string right)
+    {
+        if (!NonTerminals.Contains(left))
+        {
+            throw new Exception("Neplatné pravidlo gramatiky.");
+        }
+
+        foreach (char c in right)
+        {
+            if (!NonTerminals.Contains(c.ToString()) && !Terminals.Contains(c.ToString()))
+            {
+                throw new Exception("Neplatné pravidlo gramatiky.");
             }
         }
     }
@@ -78,13 +91,13 @@ class ContextFreeGrammar : Grammar
             List<string> rules = Rules[symbol];
             string rule = rules[random.Next(rules.Count)];
 
-            Word = "";
+            string word = "";
             for (int i = 0; i < rule.Length; i++)
             {
                 string currentSymbol = rule[i].ToString();
-                Word += GenerateRandomWord(currentSymbol);
+                word += GenerateRandomWord(currentSymbol);
             }
-            return Word;
+            return word;
         }
 
         return symbol;
@@ -92,16 +105,19 @@ class ContextFreeGrammar : Grammar
 
     protected override HashSet<string> GenerateRandomWords(string symbol, int count)
     {
+        HashSet<string> words = new HashSet<string>();
+        string word;
+
         for (int i = 0; i < count; i++)
         {
             do
             {
-                Word = GenerateRandomWord(symbol);
-            } while (Words.Contains(Word));
+                word = GenerateRandomWord(symbol);
+            } while (words.Contains(word));
 
-            Words.Add(Word);
+            words.Add(word);
         }
-        return Words;
+        return words;
     }
 
     public override void PrintGrammar()
@@ -115,9 +131,9 @@ class ContextFreeGrammar : Grammar
             Console.WriteLine($"  {rule.Key} -> {string.Join(" | ", rule.Value)}");
         }
         Console.WriteLine("Startovací symbol: " + StartSymbol);
-        Words = GenerateRandomWords(StartSymbol, 10);
+        HashSet<string> words = GenerateRandomWords(StartSymbol, 10);
         Console.WriteLine("Vygenerované řetězce:");
-        foreach (string word in Words)
+        foreach (string word in words)
         {
             Console.WriteLine("  " + word);
         }
@@ -189,11 +205,9 @@ class MatrixGrammar : Grammar
             }
             index++;
         }
-        Word = GenerateRandomWord(StartSymbol);
-        Console.WriteLine("Uložené slovo: " + Word);
-        Words = GenerateRandomWords(StartSymbol, 10);
+        HashSet<string> words = GenerateRandomWords(StartSymbol, 10);
         Console.WriteLine("Vygenerované řetězce:");
-        foreach (string word in Words)
+        foreach (string word in words)
         {
             Console.WriteLine("  " + word);
         }
