@@ -4,7 +4,7 @@
     public HashSet<string> Terminals { get; set; } = [];
     public string StartSymbol { get; set; } = "";
 
-    public static readonly Random random = new Random();
+    public static readonly Random random = new();
 
     public Grammar(string filePath)
     {
@@ -35,11 +35,9 @@
     public abstract void PrintGrammar();
 }
 
-class ContextFreeGrammar : Grammar
+class ContextFreeGrammar(string filePath) : Grammar(filePath)
 {
-    public Dictionary<string, List<string>> Rules { get; set; } = new();
-
-    public ContextFreeGrammar(string filePath) : base(filePath) { }
+    public Dictionary<string, List<string>> Rules { get; set; } = [];
 
     protected override void ParseRules(string rulesLine)
     {
@@ -54,11 +52,13 @@ class ContextFreeGrammar : Grammar
 
                 ValidateRule(left, right);
 
-                if (!Rules.ContainsKey(left))
+                if (!Rules.TryGetValue(left, out List<string>? value))
                 {
-                    Rules[left] = new List<string>();
+                    value = [];
+                    Rules[left] = value;
                 }
-                Rules[left].Add(right);
+
+                value.Add(right);
             }
         }
     }
@@ -86,9 +86,9 @@ class ContextFreeGrammar : Grammar
             return symbol;
         }
 
-        if (Rules.ContainsKey(symbol))
+        if (Rules.TryGetValue(symbol, out List<string>? value))
         {
-            List<string> rules = Rules[symbol];
+            List<string> rules = value;
             string rule = rules[random.Next(rules.Count)];
 
             string word = "";
@@ -105,7 +105,7 @@ class ContextFreeGrammar : Grammar
 
     protected override HashSet<string> GenerateRandomWords(string symbol, int count)
     {
-        HashSet<string> words = new HashSet<string>();
+        HashSet<string> words = [];
         string word;
 
         for (int i = 0; i < count; i++)
@@ -140,20 +140,18 @@ class ContextFreeGrammar : Grammar
     }
 }
 
-class MatrixGrammar : Grammar
+class MatrixGrammar(string filePath) : Grammar(filePath)
 {
-    public List<List<Tuple<string, string>>> Matrices { get; set; } = new();
-
-    public MatrixGrammar(string filePath) : base(filePath) { }
+    public List<List<Tuple<string, string>>> Matrices { get; set; } = [];
 
     protected override void ParseRules(string rulesLine)
     {
-        List<List<Tuple<string, string>>> matrices = new List<List<Tuple<string, string>>>();
+        List<List<Tuple<string, string>>> matrices = [];
         string[] matricesRaw = rulesLine.Split('|', StringSplitOptions.RemoveEmptyEntries);
 
         foreach (string matrixRaw in matricesRaw)
         {
-            List<Tuple<string, string>> matrix = new List<Tuple<string, string>>();
+            List<Tuple<string, string>> matrix = [];
             string[] rules = matrixRaw.Split(';', StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string rule in rules)
