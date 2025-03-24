@@ -4,6 +4,8 @@
     public HashSet<string> Terminals { get; set; } = [];
     public string StartSymbol { get; set; } = "";
 
+    public List<string> ?Derivation { get; set; } = [];
+
     public static readonly Random random = new();
 
     public Grammar(string filePath)
@@ -75,6 +77,14 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
     }
 
+    public List<string>? GenerateRandomWord(int maxLength)
+    {
+        int randomLength = random.Next(1, maxLength + 1);
+        List<string> derivationSteps = [StartSymbol];
+
+        return DFS(StartSymbol, randomLength, derivationSteps) ? derivationSteps : null;
+    }
+
     public List<string>? GenerateWordOfLength(int targetLength)
     {
         List<string> derivationSteps = [StartSymbol];
@@ -133,14 +143,22 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
         Console.WriteLine("Startovací symbol: " + StartSymbol);
 
-        Console.Write("Zadejte požadovanou délku slova: ");
+        Console.Write("Zadejte požadovanou délku slova (0 pro náhodné): ");
         if (int.TryParse(Console.ReadLine(), out int length))
         {
-            List<string>? derivation = GenerateWordOfLength(length);
-            if (derivation != null)
+            if (length == 0)
+            {
+                Derivation = GenerateRandomWord(20);
+            }
+            else
+            {
+                Derivation = GenerateWordOfLength(length);
+            }
+
+            if (Derivation != null)
             {
                 Console.WriteLine("Derivační sekvence:");
-                Console.WriteLine(string.Join(" => ", derivation));
+                Console.WriteLine(string.Join(" => ", Derivation));
             }
             else
             {
