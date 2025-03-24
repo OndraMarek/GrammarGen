@@ -28,10 +28,6 @@
 
     protected abstract void ParseRules(string rulesLine);
 
-    protected abstract string GenerateRandomWord(string symbol);
-
-    protected abstract HashSet<string> GenerateRandomWords(string symbol, int count);
-
     public abstract void PrintGrammar();
 }
 
@@ -79,45 +75,50 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
     }
 
-    protected override string GenerateRandomWord(string symbol)
+    public List<string>? GenerateWordOfLength(int targetLength)
     {
-        if (!NonTerminals.Contains(symbol))
-        {
-            return symbol;
-        }
+        List<string> derivationSteps = [StartSymbol];
 
-        if (Rules.TryGetValue(symbol, out List<string>? value))
-        {
-            List<string> rules = value;
-            string rule = rules[random.Next(rules.Count)];
-
-            string word = "";
-            for (int i = 0; i < rule.Length; i++)
-            {
-                string currentSymbol = rule[i].ToString();
-                word += GenerateRandomWord(currentSymbol);
-            }
-            return word;
-        }
-
-        return symbol;
+        return DFS(StartSymbol, targetLength, derivationSteps) ? derivationSteps : null;
     }
 
-    protected override HashSet<string> GenerateRandomWords(string symbol, int count)
+    private bool DFS(string currentWord, int targetLength, List<string> derivationSteps)
     {
-        HashSet<string> words = [];
-        string word;
-
-        for (int i = 0; i < count; i++)
+        if (currentWord.Length > targetLength) return false;
+        if (currentWord.Length == targetLength && currentWord.All(c => Terminals.Contains(c.ToString())))
         {
-            do
-            {
-                word = GenerateRandomWord(symbol);
-            } while (words.Contains(word));
-
-            words.Add(word);
+            return true;
         }
-        return words;
+
+        List<string> presentNonTerminals = NonTerminals.Where(currentWord.Contains).ToList();
+
+        presentNonTerminals = presentNonTerminals.OrderBy(_ => random.Next()).ToList();
+
+        foreach (string nt in presentNonTerminals)
+        {
+            int index = currentWord.IndexOf(nt);
+            if (index == -1) continue;
+
+            if (Rules.TryGetValue(nt, out List<string>? rules))
+            {
+                List<string> shuffledRules = rules.OrderBy(_ => random.Next()).ToList();
+
+                foreach (string rule in shuffledRules)
+                {
+                    string newWord = currentWord.Substring(0, index) + rule + currentWord.Substring(index + nt.Length);
+                    derivationSteps.Add(newWord);
+
+                    if (DFS(newWord, targetLength, derivationSteps))
+                    {
+                        return true;
+                    }
+
+                    derivationSteps.RemoveAt(derivationSteps.Count - 1);
+                }
+            }
+        }
+
+        return false;
     }
 
     public override void PrintGrammar()
@@ -131,11 +132,24 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
             Console.WriteLine($"  {rule.Key} -> {string.Join(" | ", rule.Value)}");
         }
         Console.WriteLine("Startovací symbol: " + StartSymbol);
-        HashSet<string> words = GenerateRandomWords(StartSymbol, 10);
-        Console.WriteLine("Vygenerované řetězce:");
-        foreach (string word in words)
+
+        Console.Write("Zadejte požadovanou délku slova: ");
+        if (int.TryParse(Console.ReadLine(), out int length))
         {
-            Console.WriteLine("  " + word);
+            List<string>? derivation = GenerateWordOfLength(length);
+            if (derivation != null)
+            {
+                Console.WriteLine("Derivační sekvence:");
+                Console.WriteLine(string.Join(" => ", derivation));
+            }
+            else
+            {
+                Console.WriteLine("Pro zadanou délku nelze vygenerovat žádné slovo.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Neplatný vstup.");
         }
     }
 }
@@ -173,17 +187,6 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
 
         Matrices = matrices;
     }
-    protected override string GenerateRandomWord(string symbol)
-    {
-        //TODO: Implementace generování náhodného řetězce
-        return "";
-    }
-
-    protected override HashSet<string> GenerateRandomWords(string symbol, int count)
-    {
-        //TODO: Implementace generování count náhodných řetězců
-        return [];
-    }
 
     public override void PrintGrammar()
     {
@@ -202,12 +205,6 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
                 Console.WriteLine($"    {rule.Item1} -> {rule.Item2}");
             }
             index++;
-        }
-        HashSet<string> words = GenerateRandomWords(StartSymbol, 10);
-        Console.WriteLine("Vygenerované řetězce:");
-        foreach (string word in words)
-        {
-            Console.WriteLine("  " + word);
         }
     }
 }
