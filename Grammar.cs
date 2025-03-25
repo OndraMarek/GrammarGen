@@ -84,7 +84,8 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         Derivation = [StartSymbol];
 
         DFS(StartSymbol);
-        return Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
+
+        return IsTerminalWord(Derivation.Last()) ? Derivation : null;
     }
 
     public List<string>? GenerateWordOfLength(int targetLength)
@@ -93,13 +94,14 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         TargetLength = targetLength;
 
         DFS(StartSymbol);
-        return Derivation.Last().Length == TargetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
+
+        return Derivation.Last().Length == TargetLength && IsTerminalWord(Derivation.Last()) ? Derivation : null;
     }
 
     private void DFS(string currentWord)
     {
         if (currentWord.Length > TargetLength && TargetLength !=0) return;
-        if ((TargetLength==0 || currentWord.Length == TargetLength) && currentWord.All(c => Terminals.Contains(c.ToString())))
+        if (IsValidLength(currentWord) && IsTerminalWord(currentWord))
         {
             return;
         }
@@ -122,7 +124,7 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                     Derivation.Add(newWord);
 
                     DFS(newWord);
-                    if ((TargetLength == 0 || Derivation.Last().Length == TargetLength) && Derivation.Last().All(c => Terminals.Contains(c.ToString())))
+                    if (IsValidLength(Derivation.Last()) && IsTerminalWord(Derivation.Last()))
                     {
                         return;
                     }
@@ -131,6 +133,17 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                 }
             }
         }
+        return;
+    }
+
+    private bool IsValidLength(string word)
+    {
+        return TargetLength == 0 || word.Length == TargetLength;
+    }
+
+    private bool IsTerminalWord(string word)
+    {
+        return word.All(c => Terminals.Contains(c.ToString()));
     }
 
 
