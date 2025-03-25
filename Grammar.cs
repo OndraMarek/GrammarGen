@@ -80,28 +80,29 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
     public List<string>? GenerateRandomWord(int maxLength)
     {
         int randomLength = random.Next(1, maxLength + 1);
-        List<string> derivationSteps = [StartSymbol];
+        Derivation = new List<string> { StartSymbol };
 
-        return DFS(StartSymbol, randomLength, derivationSteps) ? derivationSteps : null;
+        DFS(StartSymbol, randomLength);
+        return Derivation.Last().Length == randomLength ? Derivation : null;
     }
 
     public List<string>? GenerateWordOfLength(int targetLength)
     {
-        List<string> derivationSteps = [StartSymbol];
+        Derivation = new List<string> { StartSymbol };
 
-        return DFS(StartSymbol, targetLength, derivationSteps) ? derivationSteps : null;
+        DFS(StartSymbol, targetLength);
+        return Derivation.Last().Length == targetLength ? Derivation : null;
     }
 
-    private bool DFS(string currentWord, int targetLength, List<string> derivationSteps)
+    private void DFS(string currentWord, int targetLength)
     {
-        if (currentWord.Length > targetLength) return false;
+        if (currentWord.Length > targetLength) return;
         if (currentWord.Length == targetLength && currentWord.All(c => Terminals.Contains(c.ToString())))
         {
-            return true;
+            return;
         }
 
         List<string> presentNonTerminals = NonTerminals.Where(currentWord.Contains).ToList();
-
         presentNonTerminals = presentNonTerminals.OrderBy(_ => random.Next()).ToList();
 
         foreach (string nt in presentNonTerminals)
@@ -116,20 +117,20 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                 foreach (string rule in shuffledRules)
                 {
                     string newWord = currentWord.Substring(0, index) + rule + currentWord.Substring(index + nt.Length);
-                    derivationSteps.Add(newWord);
+                    Derivation.Add(newWord);
 
-                    if (DFS(newWord, targetLength, derivationSteps))
+                    DFS(newWord, targetLength);
+                    if (Derivation.Last().Length == targetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())))
                     {
-                        return true;
+                        return;
                     }
 
-                    derivationSteps.RemoveAt(derivationSteps.Count - 1);
+                    Derivation.RemoveAt(Derivation.Count - 1);
                 }
             }
         }
-
-        return false;
     }
+
 
     public override void PrintGrammar()
     {
