@@ -8,6 +8,8 @@
 
     public static readonly Random random = new();
 
+    public int TargetLength { get; set; } = 0;
+
     public Grammar(string filePath)
     {
         if (!File.Exists(filePath))
@@ -77,27 +79,27 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
     }
 
-    public List<string>? GenerateRandomWord(int maxLength)
+    public List<string>? GenerateRandomWord()
     {
-        int randomLength = random.Next(1, maxLength + 1);
-        Derivation = new List<string> { StartSymbol };
+        Derivation = [StartSymbol];
 
-        DFS(StartSymbol, randomLength);
-        return Derivation.Last().Length == randomLength ? Derivation : null;
+        DFS(StartSymbol);
+        return Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
     }
 
     public List<string>? GenerateWordOfLength(int targetLength)
     {
-        Derivation = new List<string> { StartSymbol };
+        Derivation = [StartSymbol];
+        TargetLength = targetLength;
 
-        DFS(StartSymbol, targetLength);
-        return Derivation.Last().Length == targetLength ? Derivation : null;
+        DFS(StartSymbol);
+        return Derivation.Last().Length == TargetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
     }
 
-    private void DFS(string currentWord, int targetLength)
+    private void DFS(string currentWord)
     {
-        if (currentWord.Length > targetLength) return;
-        if (currentWord.Length == targetLength && currentWord.All(c => Terminals.Contains(c.ToString())))
+        if (currentWord.Length > TargetLength && TargetLength !=0) return;
+        if ((TargetLength==0 || currentWord.Length == TargetLength) && currentWord.All(c => Terminals.Contains(c.ToString())))
         {
             return;
         }
@@ -119,8 +121,8 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                     string newWord = currentWord.Substring(0, index) + rule + currentWord.Substring(index + nt.Length);
                     Derivation.Add(newWord);
 
-                    DFS(newWord, targetLength);
-                    if (Derivation.Last().Length == targetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())))
+                    DFS(newWord);
+                    if ((TargetLength == 0 || Derivation.Last().Length == TargetLength) && Derivation.Last().All(c => Terminals.Contains(c.ToString())))
                     {
                         return;
                     }
@@ -149,7 +151,7 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         {
             if (length == 0)
             {
-                Derivation = GenerateRandomWord(20);
+                Derivation = GenerateRandomWord();
             }
             else
             {
