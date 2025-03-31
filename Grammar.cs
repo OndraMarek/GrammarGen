@@ -32,6 +32,17 @@
 
     protected abstract void ParseRules(string rulesLine);
 
+    public abstract List<string>? GenerateRandomWord();
+
+    public abstract List<string>? GenerateWordOfLength(int targetLength);
+
+    protected abstract void DFS(string currentWord);
+
+    protected virtual void DFS(string currentWord, int matrixIndex)
+    {
+        DFS(currentWord);
+    }
+
     public abstract void PrintGrammar();
 }
 
@@ -79,7 +90,7 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
     }
 
-    public List<string>? GenerateRandomWord()
+    public override List<string>? GenerateRandomWord()
     {
         Derivation = [StartSymbol];
 
@@ -88,7 +99,7 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         return IsTerminalWord(Derivation.Last()) ? Derivation : null;
     }
 
-    public List<string>? GenerateWordOfLength(int targetLength)
+    public override List<string>? GenerateWordOfLength(int targetLength)
     {
         Derivation = [StartSymbol];
         TargetLength = targetLength;
@@ -98,7 +109,7 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         return Derivation.Last().Length == TargetLength && IsTerminalWord(Derivation.Last()) ? Derivation : null;
     }
 
-    private void DFS(string currentWord)
+    protected override void DFS(string currentWord)
     {
         if (currentWord.Length > TargetLength && TargetLength !=0) return;
         if (IsValidLength(currentWord) && IsTerminalWord(currentWord))
@@ -222,6 +233,34 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
         Matrices = matrices;
     }
 
+    public override List<string>? GenerateRandomWord()
+    {
+        Derivation = [StartSymbol];
+
+        DFS(StartSymbol);
+
+        return Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
+    }
+
+    public override List<string>? GenerateWordOfLength(int targetLength)
+    {
+        Derivation = [StartSymbol];
+        TargetLength = targetLength;
+
+        DFS(StartSymbol);
+
+        return Derivation.Last().Length == TargetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
+    }
+
+    protected override void DFS(string currentWord)
+    {
+        DFS(currentWord, 0);
+    }
+
+    protected override void DFS(string currentWord, int matrixIndex)
+    {
+    }
+
     public override void PrintGrammar()
     {
         Console.WriteLine("Maticová gramatika");
@@ -239,6 +278,32 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
                 Console.WriteLine($"    {rule.Item1} -> {rule.Item2}");
             }
             index++;
+        }
+        Console.Write("Zadejte požadovanou délku slova (0 pro náhodné): ");
+        if (int.TryParse(Console.ReadLine(), out int length))
+        {
+            if (length == 0)
+            {
+                Derivation = GenerateRandomWord();
+            }
+            else
+            {
+                Derivation = GenerateWordOfLength(length);
+            }
+
+            if (Derivation != null)
+            {
+                Console.WriteLine("Derivační sekvence:");
+                Console.WriteLine(string.Join(" => ", Derivation));
+            }
+            else
+            {
+                Console.WriteLine("Pro zadanou délku nelze vygenerovat žádné slovo.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Neplatný vstup.");
         }
     }
 }
