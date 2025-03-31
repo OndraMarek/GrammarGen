@@ -36,11 +36,11 @@
 
     public abstract List<string>? GenerateWordOfLength(int targetLength);
 
-    protected abstract void DFS(string currentWord);
+    protected abstract void DFS(string currentWord, int depth);
 
     protected virtual void DFS(string currentWord, int matrixIndex, int depth)
     {
-        DFS(currentWord);
+        DFS(currentWord,0);
     }
 
     public abstract void PrintGrammar();
@@ -109,9 +109,13 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         return Derivation.Last().Length == TargetLength && IsTerminalWord(Derivation.Last()) ? Derivation : null;
     }
 
-    protected override void DFS(string currentWord)
+    protected override void DFS(string currentWord, int depth = 0)
     {
-        if (currentWord.Length > TargetLength && TargetLength !=0) return;
+        if (depth > 100)
+        {
+            return;
+        }
+
         if (IsValidLength(currentWord) && IsTerminalWord(currentWord))
         {
             return;
@@ -132,9 +136,16 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                 foreach (string rule in shuffledRules)
                 {
                     string newWord = currentWord.Substring(0, index) + rule + currentWord.Substring(index + nt.Length);
+
+                    if (TargetLength != 0 && newWord.Length > TargetLength)
+                    {
+                        continue;
+                    }
+
                     Derivation.Add(newWord);
 
-                    DFS(newWord);
+                    DFS(newWord, depth + 1);
+
                     if (IsValidLength(Derivation.Last()) && IsTerminalWord(Derivation.Last()))
                     {
                         return;
@@ -144,7 +155,6 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                 }
             }
         }
-        return;
     }
 
     private bool IsValidLength(string word)
@@ -237,7 +247,7 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
     {
         Derivation = [StartSymbol];
 
-        DFS(StartSymbol);
+        DFS(StartSymbol,0);
 
         return Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
     }
@@ -247,14 +257,14 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
         Derivation = [StartSymbol];
         TargetLength = targetLength;
 
-        DFS(StartSymbol);
+        DFS(StartSymbol,0);
 
         return Derivation.Last().Length == TargetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
     }
 
-    protected override void DFS(string currentWord)
+    protected override void DFS(string currentWord, int depth)
     {
-        DFS(currentWord, 0,0);
+        DFS(currentWord, 0, 0);
     }
 
     protected override void DFS(string currentWord, int matrixIndex, int depth = 0)

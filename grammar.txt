@@ -1,5 +1,5 @@
-MG
-A;B
-a;b
-A->AB|A->aA;B->aB|A->bA;B->bB|A->a;B->a|A->b;B->b
-A
+CFG
+A;B;C;S
+a;b;c
+S->ABC;A->Aa;A->a;B->Bb;B->b;C->Cc;C->c
+S
