@@ -10,6 +10,9 @@
 
     public int TargetLength { get; set; } = 0;
 
+    public int MaxDepth { get; set; } = 100;
+    public int MaxLength { get; set; } = 100;
+
     public Grammar(string filePath)
     {
         if (!File.Exists(filePath))
@@ -37,11 +40,6 @@
     public abstract List<string>? GenerateWordOfLength(int targetLength);
 
     protected abstract void DFS(string currentWord, int depth);
-
-    protected virtual void DFS(string currentWord, int matrixIndex, int depth)
-    {
-        DFS(currentWord,0);
-    }
 
     public abstract void PrintGrammar();
 }
@@ -111,7 +109,7 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
 
     protected override void DFS(string currentWord, int depth = 0)
     {
-        if (depth > 100)
+        if (depth > MaxDepth)
         {
             return;
         }
@@ -137,7 +135,12 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                 {
                     string newWord = currentWord.Substring(0, index) + rule + currentWord.Substring(index + nt.Length);
 
-                    if (TargetLength != 0 && newWord.Length > TargetLength)
+                    if (TargetLength != 0 && newWord.Length > Math.Min(TargetLength, MaxLength))
+                    {
+                        continue;
+                    }
+
+                    if (newWord.Length > MaxLength)
                     {
                         continue;
                     }
@@ -180,9 +183,14 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
         Console.WriteLine("Startovací symbol: " + StartSymbol);
 
-        Console.Write("Zadejte požadovanou délku slova (0 pro náhodné): ");
+        Console.Write("Zadejte požadovanou délku slova (maximálně 100, 0 pro náhodné): ");
         if (int.TryParse(Console.ReadLine(), out int length))
         {
+            if (length < 0 || length > MaxLength)
+            {
+                Console.WriteLine("Neplatná délka. Délka musí být mezi 0 a 100.");
+                return;
+            }
             if (length == 0)
             {
                 Derivation = GenerateRandomWord();
@@ -262,14 +270,9 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
         return Derivation.Last().Length == TargetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
     }
 
-    protected override void DFS(string currentWord, int depth)
+    protected override void DFS(string currentWord, int depth = 0)
     {
-        DFS(currentWord, 0, 0);
-    }
-
-    protected override void DFS(string currentWord, int matrixIndex, int depth = 0)
-    {
-        if (depth > 100)
+        if (depth > MaxDepth)
         {
             return;
         }
@@ -279,9 +282,12 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
             return;
         }
 
-        for (int i = matrixIndex; i < Matrices.Count; i++)
+        List<int> matrixIndices = Enumerable.Range(0, Matrices.Count).ToList();
+        matrixIndices = matrixIndices.OrderBy(_ => random.Next()).ToList();
+
+        foreach (int matrixIndex in matrixIndices)
         {
-            List<Tuple<string, string>> matrix = Matrices[i];
+            List<Tuple<string, string>> matrix = Matrices[matrixIndex];
             string tempWord = currentWord;
             bool matrixApplicable = true;
 
@@ -309,9 +315,19 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
                     newWord = newWord.Substring(0, index) + rule.Item2 + newWord.Substring(index + rule.Item1.Length);
                 }
 
+                if (TargetLength != 0 && newWord.Length > Math.Min(TargetLength, MaxLength))
+                {
+                    continue;
+                }
+
+                if (newWord.Length > MaxLength)
+                {
+                    continue;
+                }
+
                 Derivation.Add(newWord);
 
-                DFS(newWord, i, depth + 1);
+                DFS(newWord, depth + 1);
 
                 if (IsValidLength(Derivation.Last()) && IsTerminalWord(Derivation.Last()))
                 {
@@ -353,9 +369,14 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
             }
             index++;
         }
-        Console.Write("Zadejte požadovanou délku slova (0 pro náhodné): ");
+        Console.Write("Zadejte požadovanou délku slova (maximálně 100, 0 pro náhodné): ");
         if (int.TryParse(Console.ReadLine(), out int length))
         {
+            if (length < 0 || length > MaxLength)
+            {
+                Console.WriteLine("Neplatná délka. Délka musí být mezi 0 a 100.");
+                return;
+            }
             if (length == 0)
             {
                 Derivation = GenerateRandomWord();
