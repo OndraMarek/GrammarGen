@@ -38,7 +38,7 @@
 
     protected abstract void DFS(string currentWord);
 
-    protected virtual void DFS(string currentWord, int matrixIndex)
+    protected virtual void DFS(string currentWord, int matrixIndex, int depth)
     {
         DFS(currentWord);
     }
@@ -254,11 +254,75 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
 
     protected override void DFS(string currentWord)
     {
-        DFS(currentWord, 0);
+        DFS(currentWord, 0,0);
     }
 
-    protected override void DFS(string currentWord, int matrixIndex)
+    protected override void DFS(string currentWord, int matrixIndex, int depth = 0)
     {
+        if (depth > 100)
+        {
+            return;
+        }
+
+        if (IsValidLength(currentWord) && IsTerminalWord(currentWord))
+        {
+            return;
+        }
+
+        for (int i = matrixIndex; i < Matrices.Count; i++)
+        {
+            List<Tuple<string, string>> matrix = Matrices[i];
+            string tempWord = currentWord;
+            bool matrixApplicable = true;
+
+            foreach (Tuple<string, string> rule in matrix)
+            {
+                if (!tempWord.Contains(rule.Item1))
+                {
+                    matrixApplicable = false;
+                    break;
+                }
+            }
+
+            if (matrixApplicable)
+            {
+                string newWord = tempWord;
+
+                foreach (Tuple<string, string> rule in matrix)
+                {
+                    int index = newWord.IndexOf(rule.Item1);
+                    if (index == -1)
+                    {
+                        matrixApplicable = false;
+                        break;
+                    }
+                    newWord = newWord.Substring(0, index) + rule.Item2 + newWord.Substring(index + rule.Item1.Length);
+                }
+
+                Derivation.Add(newWord);
+
+                DFS(newWord, i, depth + 1);
+
+                if (IsValidLength(Derivation.Last()) && IsTerminalWord(Derivation.Last()))
+                {
+                    return;
+                }
+
+                Derivation.RemoveAt(Derivation.Count - 1);
+            }
+        }
+
+        return;
+    }
+
+    private bool IsValidLength(string word)
+    {
+        return TargetLength == 0 || word.Length == TargetLength;
+    }
+
+    private bool IsTerminalWord(string word)
+    {
+        return word.All(c => Terminals.Contains(c.ToString()));
     }
 
     public override void PrintGrammar()
