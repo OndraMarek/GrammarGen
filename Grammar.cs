@@ -3,13 +3,9 @@
     public HashSet<string> NonTerminals { get; set; } = [];
     public HashSet<string> Terminals { get; set; } = [];
     public string StartSymbol { get; set; } = "";
-
     public List<string> ?Derivation { get; set; } = [];
-
     public static readonly Random random = new();
-
     public int TargetLength { get; set; } = 0;
-
     public int MaxDepth { get; set; } = 100;
     public int MaxLength { get; set; } = 100;
 
@@ -33,13 +29,81 @@
         ParseRules(lines[3]);
     }
 
+    protected int GetUserInput()
+    {
+        Console.Write("Zadejte požadovanou délku slova (maximálně 100, 0 pro náhodné): ");
+        if (int.TryParse(Console.ReadLine(), out int length))
+        {
+            if (length < 0 || length > MaxLength)
+            {
+                Console.WriteLine("Neplatná délka. Délka musí být mezi 0 a 100.");
+                GetUserInput();
+            }
+            else return length;
+        }
+        else
+        {
+            Console.WriteLine("Neplatný vstup.");
+            GetUserInput();
+        }
+        return length;
+    }
+
+    protected void PrintDerivation(int length)
+    {
+        if (length == 0)
+        {
+            Derivation = GenerateRandomWord();
+        }
+        else
+        {
+            Derivation = GenerateWordOfLength(length);
+        }
+        if (Derivation != null)
+        {
+            Console.WriteLine("Derivační sekvence:");
+            Console.WriteLine(string.Join(" => ", Derivation));
+        }
+        else
+        {
+            Console.WriteLine("Pro zadanou délku nelze vygenerovat žádné slovo.");
+        }
+    }
+
+    protected bool IsValidLength(string word)
+    {
+        return TargetLength == 0 || word.Length == TargetLength;
+    }
+
+    protected bool IsTerminalWord(string word)
+    {
+        return word.All(c => Terminals.Contains(c.ToString()));
+    }
+
     protected abstract void ParseRules(string rulesLine);
 
-    public abstract List<string>? GenerateRandomWord();
+    public List<string>? GenerateRandomWord()
+    {
+        Derivation = [StartSymbol];
 
-    public abstract List<string>? GenerateWordOfLength(int targetLength);
+        DFS(StartSymbol, 0);
+
+        return Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
+    }
+
+    public List<string>? GenerateWordOfLength(int targetLength)
+    {
+        Derivation = [StartSymbol];
+        TargetLength = targetLength;
+
+        DFS(StartSymbol, 0);
+
+        return Derivation.Last().Length == TargetLength && IsTerminalWord(Derivation.Last()) ? Derivation : null;
+    }
 
     protected abstract void DFS(string currentWord, int depth);
+
+    protected abstract void PrintRules();
 
     public abstract void PrintGrammar();
 }
@@ -86,25 +150,6 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
                 throw new Exception("Neplatné pravidlo gramatiky.");
             }
         }
-    }
-
-    public override List<string>? GenerateRandomWord()
-    {
-        Derivation = [StartSymbol];
-
-        DFS(StartSymbol);
-
-        return IsTerminalWord(Derivation.Last()) ? Derivation : null;
-    }
-
-    public override List<string>? GenerateWordOfLength(int targetLength)
-    {
-        Derivation = [StartSymbol];
-        TargetLength = targetLength;
-
-        DFS(StartSymbol);
-
-        return Derivation.Last().Length == TargetLength && IsTerminalWord(Derivation.Last()) ? Derivation : null;
     }
 
     protected override void DFS(string currentWord, int depth = 0)
@@ -160,60 +205,26 @@ class ContextFreeGrammar(string filePath) : Grammar(filePath)
         }
     }
 
-    private bool IsValidLength(string word)
+    protected override void PrintRules()
     {
-        return TargetLength == 0 || word.Length == TargetLength;
-    }
-
-    private bool IsTerminalWord(string word)
-    {
-        return word.All(c => Terminals.Contains(c.ToString()));
-    }
-
-
-    public override void PrintGrammar()
-    {
-        Console.WriteLine("Bezkontextová gramatika");
-        Console.WriteLine("Neterminály: " + string.Join(", ", NonTerminals));
-        Console.WriteLine("Terminály: " + string.Join(", ", Terminals));
-        Console.WriteLine("Pravidla:");
+        Console.WriteLine("Pravidla P:");
         foreach (KeyValuePair<string, List<string>> rule in Rules)
         {
             Console.WriteLine($"  {rule.Key} -> {string.Join(" | ", rule.Value)}");
         }
+    }
+
+    public override void PrintGrammar()
+    {
+        Console.WriteLine($"Bezkontextová gramatika G=(N,T,P,{StartSymbol})");
+        Console.WriteLine("Neterminály N: " + string.Join(", ", NonTerminals));
+        Console.WriteLine("Terminály T: " + string.Join(", ", Terminals));
+        PrintRules();
         Console.WriteLine("Startovací symbol: " + StartSymbol);
 
-        Console.Write("Zadejte požadovanou délku slova (maximálně 100, 0 pro náhodné): ");
-        if (int.TryParse(Console.ReadLine(), out int length))
-        {
-            if (length < 0 || length > MaxLength)
-            {
-                Console.WriteLine("Neplatná délka. Délka musí být mezi 0 a 100.");
-                return;
-            }
-            if (length == 0)
-            {
-                Derivation = GenerateRandomWord();
-            }
-            else
-            {
-                Derivation = GenerateWordOfLength(length);
-            }
+        int length = GetUserInput();
 
-            if (Derivation != null)
-            {
-                Console.WriteLine("Derivační sekvence:");
-                Console.WriteLine(string.Join(" => ", Derivation));
-            }
-            else
-            {
-                Console.WriteLine("Pro zadanou délku nelze vygenerovat žádné slovo.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Neplatný vstup.");
-        }
+        PrintDerivation(length);
     }
 }
 
@@ -249,25 +260,6 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
         }
 
         Matrices = matrices;
-    }
-
-    public override List<string>? GenerateRandomWord()
-    {
-        Derivation = [StartSymbol];
-
-        DFS(StartSymbol,0);
-
-        return Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
-    }
-
-    public override List<string>? GenerateWordOfLength(int targetLength)
-    {
-        Derivation = [StartSymbol];
-        TargetLength = targetLength;
-
-        DFS(StartSymbol,0);
-
-        return Derivation.Last().Length == TargetLength && Derivation.Last().All(c => Terminals.Contains(c.ToString())) ? Derivation : null;
     }
 
     protected override void DFS(string currentWord, int depth = 0)
@@ -341,23 +333,9 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
         return;
     }
 
-    private bool IsValidLength(string word)
+    protected override void PrintRules()
     {
-        return TargetLength == 0 || word.Length == TargetLength;
-    }
-
-    private bool IsTerminalWord(string word)
-    {
-        return word.All(c => Terminals.Contains(c.ToString()));
-    }
-
-    public override void PrintGrammar()
-    {
-        Console.WriteLine("Maticová gramatika");
-        Console.WriteLine("Neterminály: " + string.Join(", ", NonTerminals));
-        Console.WriteLine("Terminály: " + string.Join(", ", Terminals));
-        Console.WriteLine("Startovací symbol: " + StartSymbol);
-        Console.WriteLine("Maticová pravidla:");
+        Console.WriteLine("Maticová pravidla M:");
 
         int index = 1;
         foreach (List<Tuple<string, string>> matrix in Matrices)
@@ -369,36 +347,18 @@ class MatrixGrammar(string filePath) : Grammar(filePath)
             }
             index++;
         }
-        Console.Write("Zadejte požadovanou délku slova (maximálně 100, 0 pro náhodné): ");
-        if (int.TryParse(Console.ReadLine(), out int length))
-        {
-            if (length < 0 || length > MaxLength)
-            {
-                Console.WriteLine("Neplatná délka. Délka musí být mezi 0 a 100.");
-                return;
-            }
-            if (length == 0)
-            {
-                Derivation = GenerateRandomWord();
-            }
-            else
-            {
-                Derivation = GenerateWordOfLength(length);
-            }
+    }
 
-            if (Derivation != null)
-            {
-                Console.WriteLine("Derivační sekvence:");
-                Console.WriteLine(string.Join(" => ", Derivation));
-            }
-            else
-            {
-                Console.WriteLine("Pro zadanou délku nelze vygenerovat žádné slovo.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Neplatný vstup.");
-        }
+    public override void PrintGrammar()
+    {
+        Console.WriteLine($"Maticová gramatika G=(N,T,M,{StartSymbol})");
+        Console.WriteLine("Neterminály N: " + string.Join(", ", NonTerminals));
+        Console.WriteLine("Terminály T: " + string.Join(", ", Terminals));
+        PrintRules();
+        Console.WriteLine("Startovací symbol: " + StartSymbol);
+        
+        int length = GetUserInput();
+
+        PrintDerivation(length);
     }
 }
